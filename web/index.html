@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="IssuePilot turns GitHub issues into evidence-backed implementation plans." />
+    <title>IssuePilot · Evidence before edits</title>
+    <link rel="stylesheet" href="/ui/styles.css" />
+  </head>
+  <body>
+    <div class="noise"></div>
+    <main>
+      <header class="hero">
+        <div class="brand"><span class="mark">IP</span> IssuePilot</div>
+        <p class="eyebrow">ISSUE → EVIDENCE → PLAN</p>
+        <h1>Understand the change<br /><em>before touching the code.</em></h1>
+        <p class="intro">
+          Paste a public GitHub issue. IssuePilot inspects the repository, ranks likely files,
+          and produces a reviewable implementation plan.
+        </p>
+      </header>
+
+      <section class="analyzer" aria-labelledby="analyzer-title">
+        <h2 id="analyzer-title">Analyze an issue</h2>
+        <form id="issue-form">
+          <label for="issue-url">Public GitHub issue URL</label>
+          <div class="input-row">
+            <input
+              id="issue-url"
+              name="issue-url"
+              type="url"
+              required
+              placeholder="https://github.com/owner/repository/issues/123"
+              autocomplete="url"
+            />
+            <button type="submit"><span>Build plan</span><span aria-hidden="true">→</span></button>
+          </div>
+        </form>
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+      </section>
+
+      <section id="result" class="result hidden" aria-live="polite">
+        <div class="result-head">
+          <div>
+            <p id="repo-name" class="eyebrow"></p>
+            <h2 id="issue-title"></h2>
+          </div>
+          <span id="confidence" class="badge"></span>
+        </div>
+
+        <div class="grid">
+          <article class="panel wide">
+            <p class="panel-label">Working hypothesis</p>
+            <p id="hypothesis" class="large-copy"></p>
+            <p id="notice" class="notice"></p>
+          </article>
+
+          <article class="panel">
+            <p class="panel-label">Likely files</p>
+            <ol id="files" class="files"></ol>
+          </article>
+
+          <article class="panel">
+            <p class="panel-label">Verification</p>
+            <ul id="verification" class="check-list"></ul>
+          </article>
+
+          <article class="panel wide">
+            <p class="panel-label">Implementation sequence</p>
+            <ol id="steps" class="steps"></ol>
+          </article>
+        </div>
+      </section>
+    </main>
+    <footer>
+      <span>IssuePilot / v0.1</span>
+      <a href="/docs">API docs</a>
+    </footer>
+    <script src="/ui/app.js" defer></script>
+  </body>
+</html>
+
