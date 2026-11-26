@@ -20,6 +20,25 @@ const renderResult = (data) => {
   setText("#hypothesis", data.plan.root_cause_hypothesis);
   setText("#notice", data.notice);
 
+  const tracePanel = document.querySelector("#trace-panel");
+  if (data.agent_trace.length) {
+    addListItems("#agent-trace", data.agent_trace, (step) => {
+      const li = document.createElement("li");
+      const heading = document.createElement("div");
+      heading.className = "trace-heading";
+      heading.textContent = `Round ${step.round} / ${step.tool}`;
+      const args = document.createElement("code");
+      args.textContent = JSON.stringify(step.arguments);
+      const summary = document.createElement("p");
+      summary.textContent = step.result_summary;
+      li.append(heading, args, summary);
+      return li;
+    });
+    tracePanel.classList.remove("hidden");
+  } else {
+    tracePanel.classList.add("hidden");
+  }
+
   addListItems("#files", data.relevant_files, (file) => {
     const li = document.createElement("li");
     const path = document.createElement("span");

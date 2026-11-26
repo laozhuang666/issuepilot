@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from issuepilot import __version__
 from issuepilot.config import get_settings
 from issuepilot.errors import IssuePilotError
 from issuepilot.models import AnalysisRequest, AnalysisResponse
@@ -23,7 +24,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="IssuePilot API",
-    version="0.1.0",
+    version=__version__,
     description="Turn public GitHub issues into evidence-backed implementation plans.",
     lifespan=lifespan,
 )
@@ -37,7 +38,7 @@ async def index() -> FileResponse:
 
 @app.get("/api/health")
 async def health() -> dict[str, str]:
-    return {"status": "ok", "version": "0.1.0"}
+    return {"status": "ok", "version": __version__}
 
 
 @app.post("/api/analyze", response_model=AnalysisResponse)

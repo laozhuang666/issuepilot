@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "issuepilot"
-version = "0.1.0"
+version = "0.2.0"
 description = "Turn a public GitHub issue into an evidence-backed implementation plan."
 readme = "README.md"
 requires-python = ">=3.11"

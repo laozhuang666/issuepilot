@@ -82,10 +82,18 @@ class ActionPlan(BaseModel):
     confidence: Literal["low", "medium", "high"]
 
 
+class AgentTraceStep(BaseModel):
+    round: int
+    tool: Literal["search_paths", "read_file", "search_code"]
+    arguments: dict[str, str | int]
+    result_summary: str
+
+
 class AnalysisResponse(BaseModel):
     issue: IssueData
     repository: RepositoryData
     relevant_files: list[FileEvidence]
     plan: ActionPlan
-    planner: Literal["heuristic", "openai"]
+    planner: Literal["heuristic", "agent"]
+    agent_trace: list[AgentTraceStep] = Field(default_factory=list)
     notice: str
