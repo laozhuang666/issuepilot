@@ -6,6 +6,16 @@ IssuePilot reads a GitHub issue, inspects the repository tree, ranks potentially
 and produces a reviewable plan before any code is changed. It is designed as a transparent,
 portfolio-ready foundation for an Issue-to-PR agent.
 
+## Demo
+
+### Analyze a public GitHub issue
+
+![IssuePilot web interface](docs/issuepilot-home.png)
+
+### Review repository evidence and an implementation plan
+
+![IssuePilot analysis result](docs/issuepilot-analysis.png)
+
 > Current scope: analysis and planning. Version 0.1 deliberately does **not** modify repositories,
 > run untrusted code, or open pull requests. Those actions belong in a later sandboxed execution
 > stage.
