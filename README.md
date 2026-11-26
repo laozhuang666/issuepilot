@@ -137,7 +137,7 @@ The GitHub Actions workflow runs both commands for pushes to `main` and pull req
 - Source previews and repository file counts are bounded by configuration.
 - Plans are suggestions and explicitly require human review.
 
-![IssuePilot demo]![Uploading docsissuepilot-demo.png…]()
+
 
 
 ## License
