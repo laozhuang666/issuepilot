@@ -147,11 +147,8 @@ The GitHub Actions workflow runs both commands for pushes to `main` and pull req
 - Source previews and repository file counts are bounded by configuration.
 - Plans are suggestions and explicitly require human review.
 
-## Resume-ready description
 
-> Built an evidence-backed GitHub Issue analysis agent using FastAPI, GitHub REST APIs, bounded
-> code retrieval, relevance ranking, deterministic fallback planning, and optional LLM reasoning;
-> added a responsive web UI, Docker packaging, automated tests, and CI.
+
 
 ## License
 
