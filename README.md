@@ -51,6 +51,14 @@ The service never executes repository code. GitHub and model credentials stay se
 
 Requirements: Python 3.11 or newer.
 
+### One-click start on Windows
+
+Double-click `一键启动IssuePilot.bat`. On the first launch it creates the local environment,
+installs dependencies, creates a private `.env` file, starts the API, and opens the browser.
+Keep the launcher window open while using IssuePilot and press `Ctrl+C` to stop it.
+
+### Manual setup
+
 ```bash
 git clone https://github.com/YOUR_NAME/issuepilot.git
 cd issuepilot
