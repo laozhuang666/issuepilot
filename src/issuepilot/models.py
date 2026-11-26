@@ -95,5 +95,6 @@ class AnalysisResponse(BaseModel):
     relevant_files: list[FileEvidence]
     plan: ActionPlan
     planner: Literal["heuristic", "agent"]
+    model_provider: Literal["openai", "deepseek", "openrouter", "ollama"] | None = None
     agent_trace: list[AgentTraceStep] = Field(default_factory=list)
     notice: str

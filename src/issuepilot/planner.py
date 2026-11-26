@@ -1,9 +1,7 @@
 import json
 from typing import Any
 
-from openai import AsyncOpenAI
-
-from issuepilot.agent_tools import TOOL_DEFINITIONS, AgentToolbox
+from issuepilot.agent_tools import AgentToolbox
 from issuepilot.config import Settings
 from issuepilot.models import (
     ActionPlan,
@@ -13,10 +11,11 @@ from issuepilot.models import (
     PlanStep,
     RepositoryData,
 )
+from issuepilot.providers import AgentProvider, build_agent_provider
 
 
 class Planner:
-    def __init__(self, settings: Settings, client: AsyncOpenAI | None = None) -> None:
+    def __init__(self, settings: Settings, client: Any | None = None) -> None:
         self.settings = settings
         self.client = client
 
@@ -26,16 +25,23 @@ class Planner:
         repository: RepositoryData,
         evidence: list[FileEvidence],
         toolbox: AgentToolbox | None = None,
-    ) -> tuple[ActionPlan, str, list[AgentTraceStep]]:
-        if self.settings.openai_api_key and toolbox:
+    ) -> tuple[ActionPlan, str, list[AgentTraceStep], str | None]:
+        provider = build_agent_provider(self.settings, self.client)
+        if provider and toolbox:
             try:
-                plan = await self._create_agent_plan(issue, repository, evidence, toolbox)
-                return plan, "agent", toolbox.trace
+                plan = await self._create_agent_plan(
+                    issue,
+                    repository,
+                    evidence,
+                    toolbox,
+                    provider,
+                )
+                return plan, "agent", toolbox.trace, provider.name
             except Exception:
                 # The application remains useful if the model is unavailable or returns bad JSON.
                 pass
         trace = toolbox.trace if toolbox else []
-        return self._create_heuristic_plan(issue, repository, evidence), "heuristic", trace
+        return self._create_heuristic_plan(issue, repository, evidence), "heuristic", trace, None
 
     def _create_heuristic_plan(
         self,
@@ -119,8 +125,8 @@ class Planner:
         repository: RepositoryData,
         evidence: list[FileEvidence],
         toolbox: AgentToolbox,
+        provider: AgentProvider,
     ) -> ActionPlan:
-        client = self.client or AsyncOpenAI(api_key=self.settings.openai_api_key)
         evidence_payload = [
             {
                 "path": item.path,
@@ -144,40 +150,9 @@ class Planner:
             "confidence. "
             "Each step has order, title, details, and files. Confidence is low, medium, or high."
         )
-        response = await client.responses.create(
-            model=self.settings.openai_model,
-            instructions=instructions,
-            input=json.dumps(prompt, ensure_ascii=False),
-            tools=TOOL_DEFINITIONS,
-        )
-
-        for round_number in range(1, self.settings.max_agent_rounds + 1):
-            calls = [item for item in response.output if item.type == "function_call"]
-            if not calls:
-                payload = self._parse_plan_json(response.output_text)
-                return ActionPlan.model_validate(payload)
-
-            outputs = []
-            for index, call in enumerate(calls):
-                if index < self.settings.max_agent_calls_per_round:
-                    result = await toolbox.execute(round_number, call.name, call.arguments)
-                else:
-                    result = "Error: per-round tool-call limit exceeded."
-                outputs.append(
-                    {
-                        "type": "function_call_output",
-                        "call_id": call.call_id,
-                        "output": result,
-                    }
-                )
-            response = await client.responses.create(
-                model=self.settings.openai_model,
-                previous_response_id=response.id,
-                input=outputs,
-                tools=TOOL_DEFINITIONS,
-            )
-
-        raise ValueError("The analysis agent exceeded its tool-call round limit.")
+        output = await provider.complete(prompt, instructions, toolbox)
+        payload = self._parse_plan_json(output)
+        return ActionPlan.model_validate(payload)
 
     @staticmethod
     def _parse_plan_json(text: str) -> dict[str, Any]:

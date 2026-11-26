@@ -62,6 +62,16 @@ TOOL_DEFINITIONS = [
     },
 ]
 
+CHAT_TOOL_DEFINITIONS = [
+    {
+        "type": "function",
+        "function": {
+            key: value for key, value in definition.items() if key not in {"type", "strict"}
+        },
+    }
+    for definition in TOOL_DEFINITIONS
+]
+
 
 class AgentToolbox:
     def __init__(

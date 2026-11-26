@@ -37,8 +37,14 @@ async def index() -> FileResponse:
 
 
 @app.get("/api/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok", "version": __version__}
+async def health() -> dict[str, str | bool]:
+    settings = get_settings()
+    return {
+        "status": "ok",
+        "version": __version__,
+        "model_provider": settings.llm_provider,
+        "agent_configured": settings.agent_enabled,
+    }
 
 
 @app.post("/api/analyze", response_model=AnalysisResponse)

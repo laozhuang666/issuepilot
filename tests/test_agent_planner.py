@@ -70,7 +70,7 @@ async def test_agent_calls_tool_then_returns_validated_plan() -> None:
     repository = RepositoryData(full_name="acme/demo", default_branch="main")
     evidence = [FileEvidence(path="src/parser.py", score=10, reasons=["issue term"])]
 
-    result, planner_name, trace = await planner.create_plan(
+    result, planner_name, trace, provider = await planner.create_plan(
         issue,
         repository,
         evidence,
@@ -78,7 +78,92 @@ async def test_agent_calls_tool_then_returns_validated_plan() -> None:
     )
 
     assert planner_name == "agent"
+    assert provider == "openai"
     assert result.confidence == "high"
     assert trace[0].tool == "read_file"
     assert fake_responses.requests[1]["previous_response_id"] == "response-1"
     assert fake_responses.requests[1]["input"][0]["type"] == "function_call_output"
+
+
+class FakeChatCompletions:
+    def __init__(self, messages: list[SimpleNamespace]) -> None:
+        self.queue = messages
+        self.requests: list[dict] = []
+
+    async def create(self, **kwargs):
+        self.requests.append(kwargs)
+        message = self.queue.pop(0)
+        return SimpleNamespace(choices=[SimpleNamespace(message=message)])
+
+
+async def test_deepseek_chat_adapter_executes_tools() -> None:
+    tool_call = SimpleNamespace(
+        id="chat-call-1",
+        function=SimpleNamespace(
+            name="search_paths",
+            arguments='{"query":"parser","limit":5}',
+        ),
+    )
+    plan = {
+        "summary": "Inspect parser behavior",
+        "root_cause_hypothesis": "The parser mishandles empty input.",
+        "steps": [
+            {
+                "order": 1,
+                "title": "Update parser",
+                "details": "Add an empty-input guard.",
+                "files": ["src/parser.py"],
+            }
+        ],
+        "verification": ["Run parser tests."],
+        "risks": ["Input behavior may change."],
+        "open_questions": [],
+        "confidence": "medium",
+    }
+    completions = FakeChatCompletions(
+        [
+            SimpleNamespace(content=None, tool_calls=[tool_call]),
+            SimpleNamespace(content=json.dumps(plan), tool_calls=None),
+        ]
+    )
+    fake_client = SimpleNamespace(chat=SimpleNamespace(completions=completions))
+
+    async def reader(path: str) -> str:
+        return "def parse(value):\n    return value\n"
+
+    toolbox = AgentToolbox(
+        files=[RepositoryFile(path="src/parser.py")],
+        reader=reader,
+        max_result_chars=2_000,
+    )
+    planner = Planner(
+        Settings(
+            llm_provider="deepseek",
+            llm_api_key="test-key",
+            llm_model="deepseek-flash",
+        ),
+        client=fake_client,
+    )
+    issue = IssueData(
+        number=2,
+        title="Empty input fails",
+        body="Parser fails on empty input.",
+        state="open",
+        url="https://github.com/acme/demo/issues/2",
+    )
+    repository = RepositoryData(full_name="acme/demo", default_branch="main")
+
+    result, planner_name, trace, provider = await planner.create_plan(
+        issue,
+        repository,
+        [],
+        toolbox,
+    )
+
+    assert planner_name == "agent"
+    assert provider == "deepseek"
+    assert result.confidence == "medium"
+    assert trace[0].tool == "search_paths"
+    second_messages = completions.requests[1]["messages"]
+    assert second_messages[-1]["role"] == "tool"
+    assert completions.requests[0]["tools"][0]["function"]["name"] == "search_paths"

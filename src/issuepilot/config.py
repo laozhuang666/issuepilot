@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -13,6 +14,12 @@ class Settings(BaseSettings):
     )
 
     github_token: str | None = None
+    llm_provider: Literal["openai", "deepseek", "openrouter", "ollama"] = "openai"
+    llm_api_key: str | None = None
+    llm_base_url: str | None = None
+    llm_model: str | None = None
+
+    # Backward-compatible aliases for existing v0.2 installations.
     openai_api_key: str | None = None
     openai_model: str = "gpt-5-mini"
     github_api_url: str = "https://api.github.com"
@@ -58,6 +65,45 @@ class Settings(BaseSettings):
         le=40_000,
         validation_alias="ISSUEPILOT_MAX_TOOL_RESULT_CHARS",
     )
+
+    @property
+    def effective_api_key(self) -> str | None:
+        key = (self.llm_api_key or "").strip()
+        if key:
+            return key
+        if self.llm_provider == "openai":
+            return (self.openai_api_key or "").strip() or None
+        return None
+
+    @property
+    def effective_model(self) -> str:
+        configured = (self.llm_model or "").strip()
+        if configured:
+            return configured
+        defaults = {
+            "openai": self.openai_model,
+            "deepseek": "deepseek-flash",
+            "openrouter": "openai/gpt-5-mini",
+            "ollama": "qwen3:8b",
+        }
+        return defaults[self.llm_provider]
+
+    @property
+    def effective_base_url(self) -> str | None:
+        configured = (self.llm_base_url or "").strip()
+        if configured:
+            return configured.rstrip("/")
+        defaults = {
+            "openai": None,
+            "deepseek": "https://api.deepseek.com",
+            "openrouter": "https://openrouter.ai/api/v1",
+            "ollama": "http://127.0.0.1:11434/v1",
+        }
+        return defaults[self.llm_provider]
+
+    @property
+    def agent_enabled(self) -> bool:
+        return self.llm_provider == "ollama" or self.effective_api_key is not None
 
 
 @lru_cache
